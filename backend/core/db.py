@@ -1,9 +1,11 @@
 """MongoDB connection (pymongo native async client) and collection names."""
 
+import asyncio
 import logging
 
 from pymongo import ASCENDING, DESCENDING, AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
+from pymongo.errors import PyMongoError
 
 from config.settings import get_settings
 
@@ -20,11 +22,24 @@ class Collections:
 _client: AsyncMongoClient | None = None
 
 
-async def connect_db() -> AsyncDatabase:
+async def connect_db(attempts: int = 6, delay_seconds: float = 5) -> AsyncDatabase:
+    """Connect and create indexes, retrying while MongoDB is still starting (containers, cloud failover)."""
     global _client
     settings = get_settings()
     _client = AsyncMongoClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000, tz_aware=True)
-    await _client.admin.command("ping")
+    for attempt in range(1, attempts + 1):
+        try:
+            await _client.admin.command("ping")
+            break
+        except PyMongoError as exc:
+            if attempt == attempts:
+                log.error("database unreachable, giving up", extra={"attempts": attempts})
+                raise
+            log.warning(
+                "database not reachable yet, retrying",
+                extra={"attempt": attempt, "of": attempts, "error": str(exc).split(",")[0]},
+            )
+            await asyncio.sleep(delay_seconds)
     db = _client[settings.mongodb_database]
     await _ensure_indexes(db)
     log.info("connected", extra={"database": settings.mongodb_database})

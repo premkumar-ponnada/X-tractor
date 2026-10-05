@@ -1,14 +1,5 @@
-# API + worker
-fastapi==0.142.2
-uvicorn[standard]==0.54.0
-pydantic==2.13.5
-pydantic-settings==2.15.0
-pymongo==4.18.2
-PyJWT==2.15.1
-python-multipart==0.0.32
-sse-starlette==3.5.0
-httpx==0.28.1
-filetype==1.2.0
+# Worker (and local development): API packages + every extraction SDK.
+-r requirements-api.txt
 
 # Baseline readers
 pypdf==6.19.0
@@ -21,5 +12,5 @@ extract-msg==0.56.1
 markitdown[all]==0.1.8
 docling==2.133.0
 unstructured[all-docs]==0.27.10
-# unstructured pulls python-magic, which hangs on import on Windows without libmagic:
+# On Windows, unstructured's python-magic hangs on import without libmagic:
 #   pip uninstall -y python-magic   (file types are detected by X-tractor itself)

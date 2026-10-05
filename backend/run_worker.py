@@ -9,24 +9,37 @@ import logging
 import os
 import signal
 import socket
+import tempfile
+import time
 from datetime import timedelta
+from pathlib import Path
 from uuid import uuid4
 
 from config.settings import get_settings
 from core.db import close_db, connect_db
 from core.logging import setup_logging
 from core.storage import get_storage
+from extractors.capabilities import collect as collect_capabilities
 from features.jobs.repository import JobRepository
 from worker.pool import ExtractionPool
 from worker.runner import JobRunner
 
 log = logging.getLogger("worker")
+CAPABILITY_REFRESH_SECONDS = 60
+# Touched on every heartbeat; the Docker HEALTHCHECK fails when it goes stale.
+HEARTBEAT_FILE = Path(tempfile.gettempdir()) / "xtractor-worker.heartbeat"
 
 
 async def _maintenance(repo: JobRepository, worker_id: str, stop: asyncio.Event) -> None:
+    """Heartbeat (with what this worker can extract), plus requeueing of jobs from dead workers."""
     settings = get_settings()
+    capabilities, checked_at = None, 0.0
     while not stop.is_set():
-        await repo.worker_seen(worker_id, {"host": socket.gethostname(), "pid": os.getpid()})
+        if capabilities is None or time.monotonic() - checked_at > CAPABILITY_REFRESH_SECONDS:
+            capabilities = await asyncio.to_thread(collect_capabilities, settings.tika_url, settings.tesseract_cmd)
+            checked_at = time.monotonic()
+        await repo.worker_seen(worker_id, {"host": socket.gethostname(), "pid": os.getpid(), "capabilities": capabilities})
+        HEARTBEAT_FILE.touch()
         requeued = await repo.requeue_stale(timedelta(seconds=settings.worker_stale_seconds), settings.job_max_attempts)
         for job_id in requeued:
             await repo.add_event(job_id, type="job.requeued", level="warning", message="Worker stopped responding — job requeued")

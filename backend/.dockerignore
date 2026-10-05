@@ -1,8 +1,16 @@
+# Keep the build context small and free of secrets/data.
 venv/
 .venv/
 storage/
-__pycache__/
+tests/
+**/__pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
 .env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore
+run_backend.py
+*.md

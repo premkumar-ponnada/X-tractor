@@ -1,16 +1,23 @@
-# Full X-tractor stack: docker compose up --build   →  http://localhost:8080
-# Set XT_AUTH_PASSWORD and XT_JWT_SECRET in a .env file next to this file first.
+# X-tractor — full stack.
+#
+#   Build locally:      docker compose build
+#   Run:                docker compose up -d          → http://localhost:8080
+#   Publish to Hub:     docker compose push           (premponnada/xtractor-*:${XT_VERSION})
+#   Run from Hub only:  docker compose pull && docker compose up -d --no-build
+#
+# Needs a .env next to this file with at least XT_AUTH_PASSWORD and XT_JWT_SECRET (see .env.docker.example).
 name: xtractor
 
 x-backend-env: &backend-env
   XT_APP_ENV: ${XT_APP_ENV:-local}
+  XT_LOG_LEVEL: ${XT_LOG_LEVEL:-INFO}
   XT_MONGODB_URI: mongodb://mongo:27017
   XT_MONGODB_DATABASE: xtractor
   XT_AUTH_EMAIL: ${XT_AUTH_EMAIL:-admin@xtractor.dev}
   XT_AUTH_PASSWORD: ${XT_AUTH_PASSWORD:?set XT_AUTH_PASSWORD in .env}
   XT_JWT_SECRET: ${XT_JWT_SECRET:?set XT_JWT_SECRET in .env}
   XT_COOKIE_SECURE: ${XT_COOKIE_SECURE:-false}
-  XT_CORS_ORIGINS: http://localhost:8080
+  XT_CORS_ORIGINS: ${XT_PUBLIC_URL:-http://localhost:8080}
   XT_TIKA_URL: http://tika:9998
   XT_OCR_LANGUAGES: swe+eng
 
@@ -19,41 +26,60 @@ services:
     image: mongo:8
     volumes: [mongo-data:/data/db]
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
-      retries: 5
-
-  tika:
-    image: apache/tika:3.3.2.0-full # "full" includes Tesseract for OCR
+      timeout: 5s
+      retries: 6
     restart: unless-stopped
 
+  tika:
+    image: apache/tika:3.3.1.0-full # "full" bundles Tesseract for OCR
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 2g }
+
   api:
-    build: ./backend
+    image: ${XT_REGISTRY:-premponnada}/xtractor-api:${XT_VERSION:-1.0.0}
+    build: { context: ./backend, target: api }
     environment: *backend-env
     volumes: [storage:/data/storage]
     depends_on:
       mongo: { condition: service_healthy }
+    init: true
     restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 512m }
 
   worker:
-    build: ./backend
-    command: ["python", "run_worker.py"]
+    image: ${XT_REGISTRY:-premponnada}/xtractor-worker:${XT_VERSION:-1.0.0}
+    build: { context: ./backend, target: worker }
     environment:
       <<: *backend-env
       XT_WORKER_PROCESSES: ${XT_WORKER_PROCESSES:-1}
-    volumes: [storage:/data/storage, models:/models]
+      XT_RUN_TIMEOUT_SECONDS: ${XT_RUN_TIMEOUT_SECONDS:-900}
+    volumes: [storage:/data/storage]
     depends_on:
       mongo: { condition: service_healthy }
       tika: { condition: service_started }
+    init: true
     restart: unless-stopped
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits: { memory: 6g }
 
   web:
-    build: ./frontend
-    ports: ["8080:8080"]
-    depends_on: [api]
+    image: ${XT_REGISTRY:-premponnada}/xtractor-web:${XT_VERSION:-1.0.0}
+    build: { context: ./frontend }
+    environment:
+      API_UPSTREAM: http://api:8000
+    ports: ["${XT_WEB_PORT:-8080}:8080"]
+    depends_on:
+      api: { condition: service_healthy }
     restart: unless-stopped
 
 volumes:
   mongo-data:
   storage:
-  models:

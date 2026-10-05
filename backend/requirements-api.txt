@@ -1,0 +1,11 @@
+# API image: HTTP, auth, MongoDB, SSE. No extraction SDKs (those live in the worker image).
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+pymongo==4.18.2
+PyJWT==2.15.1
+python-multipart==0.0.32
+sse-starlette==3.5.0
+httpx==0.28.1
+filetype==1.2.0

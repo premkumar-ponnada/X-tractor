@@ -1,0 +1,9 @@
+# Normalise line endings: LF everywhere (containers, nginx, Python), CRLF only for Windows scripts.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+*.docx binary
+*.xlsx binary
