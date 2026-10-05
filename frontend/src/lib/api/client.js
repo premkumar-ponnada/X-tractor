@@ -15,7 +15,13 @@ export class ApiError extends Error {
 // Fired on any 401 so the auth layer can send the user back to /login.
 export const UNAUTHORIZED_EVENT = 'xt:unauthorized'
 
+const BACKEND_DOWN = 'The X-tractor backend is not running. Start it with: python run_backend.py'
+
 async function parseError(response) {
+  // 502/503/504 without our JSON body come from the dev proxy or nginx: the API is unreachable.
+  if ([502, 503, 504].includes(response.status) && !response.headers.get('content-type')?.includes('application/json')) {
+    return new ApiError(response.status, 'backend_unavailable', BACKEND_DOWN)
+  }
   try {
     const body = await response.json()
     const error = body?.error ?? {}
@@ -39,7 +45,7 @@ export async function request(path, { method = 'GET', body, form, signal, raw = 
     response = await fetch(`${API_BASE}${path}`, init)
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    throw new ApiError(0, 'network_error', 'Cannot reach the X-tractor API. Is the backend running?')
+    throw new ApiError(0, 'network_error', BACKEND_DOWN)
   }
 
   if (!response.ok) {

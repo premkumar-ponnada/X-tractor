@@ -16,8 +16,6 @@ import {
   XCircle,
 } from 'lucide-react'
 
-export const APP_NAME = 'X-tractor'
-
 // Fallback SDK colours (the API also sends them) — keeps skeletons and charts consistent.
 export const SDK_COLORS = {
   docling: '#2563eb',

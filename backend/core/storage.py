@@ -70,9 +70,6 @@ class LocalStorage:
     def delete_job(self, job_id: str) -> None:
         shutil.rmtree(self._safe("jobs", job_id), ignore_errors=True)
 
-    def delete_run(self, job_id: str, run_id: str) -> None:
-        shutil.rmtree(self.run_dir(job_id, run_id), ignore_errors=True)
-
 
 _storage: LocalStorage | None = None
 

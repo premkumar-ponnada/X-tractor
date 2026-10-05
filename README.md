@@ -82,7 +82,14 @@ npm install
 
 **Swedish OCR:** download [`swe.traineddata`](https://github.com/tesseract-ocr/tessdata_fast/raw/main/swe.traineddata) into `C:\Program Files\Tesseract-OCR\tessdata\` (needs admin). Without it, OCR falls back to English and å/ä/ö are misread, and the UI marks Swedish as "not installed".
 
-**Run** everything with `powershell -ExecutionPolicy Bypass -File scripts\dev.ps1`, or start each service yourself:
+**Run** with two terminals. `run_backend.py` starts the API, the worker and Tika together, with prefixed logs, and one `Ctrl+C` stops all three:
+
+```powershell
+cd backend;  .\venv\Scripts\python.exe run_backend.py     # API + worker + Tika  (--no-tika, --no-reload, --port)
+cd frontend; npm run dev                                   # → http://localhost:5173
+```
+
+You can also run `powershell -ExecutionPolicy Bypass -File scripts\dev.ps1` (one window per service), or start each service yourself. In production they stay separate processes or containers.
 
 | Service | Command (from its folder) | URL |
 |---|---|---|

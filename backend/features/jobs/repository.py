@@ -8,7 +8,7 @@ from pymongo import ASCENDING, DESCENDING, ReturnDocument
 from pymongo.asynchronous.database import AsyncDatabase
 
 from core.db import Collections
-from features.jobs.models import FINISHED_JOB, JobEvent, JobStatus, RunStatus, utcnow
+from features.jobs.models import JobEvent, JobStatus, RunStatus, utcnow
 
 
 class JobRepository:
@@ -183,7 +183,3 @@ class JobRepository:
 
 def _escape(text: str) -> str:
     return re.escape(text.strip()[:100])
-
-
-def is_finished(status: str) -> bool:
-    return status in FINISHED_JOB

@@ -23,6 +23,9 @@ tools/tika/*.sha512
 node_modules/
 dist/
 .vite/
+*.local
+npm-debug.log*
+*.log
 
 # OS / editors
 .DS_Store

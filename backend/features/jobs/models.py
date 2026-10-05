@@ -37,7 +37,6 @@ class RunStatus(StrEnum):
 
 
 FINISHED_JOB = {JobStatus.COMPLETED, JobStatus.PARTIAL, JobStatus.FAILED, JobStatus.CANCELLED}
-FINISHED_RUN = {RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.UNSUPPORTED, RunStatus.CANCELLED}
 
 
 class JobFile(BaseModel):

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # Extraction
     tika_url: str = "http://localhost:9998"
     tesseract_cmd: str = "tesseract"
+    libreoffice_dir: str | None = None  # only if LibreOffice is not in a standard folder
     ocr_languages: str = "swe+eng"
     run_timeout_seconds: int = Field(default=900, ge=30)
 

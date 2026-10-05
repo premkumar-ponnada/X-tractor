@@ -15,7 +15,7 @@ from extractors.base import (
     Page,
     package_version,
 )
-from extractors.docling_extractor import libreoffice_available
+from extractors.libreoffice import libreoffice_available
 from extractors.ocr import usable_languages
 
 LEGACY_KINDS = {FileKind.DOC, FileKind.PPT, FileKind.ODT}

@@ -232,7 +232,3 @@ export const Input = forwardRef(function Input({ className, icon: Icon, ...props
     </div>
   )
 })
-
-export function Kbd({ children }) {
-  return <kbd className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-fg-3">{children}</kbd>
-}

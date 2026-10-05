@@ -46,13 +46,11 @@ export const jobApi = {
   retry: (id) => request(`/jobs/${id}/retry`, { method: 'POST' }),
   remove: (id) => request(`/jobs/${id}`, { method: 'DELETE' }),
   eventsUrl: (id) => `${API_BASE}/jobs/${id}/events`,
-  history: (id) => request(`/jobs/${id}/events/history`),
   compare: (id, fileId) => request(`/jobs/${id}/compare${qs({ file_id: fileId })}`),
   report: (id) => request(`/jobs/${id}/report`),
 }
 
 export const runApi = {
-  get: (id) => request(`/runs/${id}`),
   pages: (id, offset = 0, limit = 200) => request(`/runs/${id}/pages${qs({ offset, limit })}`),
   output: (id, format) => request(`/runs/${id}/output${qs({ format })}`),
   downloadUrl: (id, format) => `${API_BASE}/runs/${id}/download${qs({ format })}`,

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from extractors.base import ExtractionError, ExtractOptions, FileKind
+from extractors.libreoffice import ensure_on_path
 from extractors.registry import build_registry
 
 _registry = None
@@ -18,6 +19,7 @@ _registry = None
 def execute_run(sdk: str, path: str, kind: str, options: dict[str, Any], events) -> dict[str, Any]:
     global _registry
     if _registry is None:
+        ensure_on_path()  # Docling/Unstructured run `soffice` for legacy Office formats
         _registry = build_registry(options["tika_url"])
     extractor = _registry[sdk]
 

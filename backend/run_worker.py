@@ -42,6 +42,8 @@ async def main() -> None:
     setup_logging(settings.log_level)
     db = await connect_db()
     repo = JobRepository(db)
+    if settings.libreoffice_dir:
+        os.environ.setdefault("XT_LIBREOFFICE_DIR", settings.libreoffice_dir)
     worker_id = f"{socket.gethostname()}-{os.getpid()}-{uuid4().hex[:6]}"
     pool = ExtractionPool(settings.worker_processes)
     runner = JobRunner(repo, get_storage(), pool, settings, worker_id)

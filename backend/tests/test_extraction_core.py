@@ -1,5 +1,7 @@
 """File detection, zip safety, metrics, scoring and the two fast extractors."""
 
+import shutil
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -9,6 +11,7 @@ from extractors.base import ExtractOptions, FileKind, Page
 from extractors.baseline_extractor import BaselineExtractor
 from extractors.containers import ZipLimitError, ZipLimits, iter_zip
 from extractors.file_detect import detect_kind
+from extractors.libreoffice import libreoffice_available
 from extractors.markitdown_extractor import MarkItDownExtractor
 from extractors.metrics import compute_metrics
 from features.results.scoring import score_file_runs
@@ -132,3 +135,27 @@ def test_every_adapter_declares_formats_and_kinds():
 
 def test_fixture_folder_exists():
     assert Path(FIXTURES).is_dir()
+
+
+@pytest.mark.skipif(not libreoffice_available(), reason="LibreOffice not installed")
+def test_legacy_rtf_through_libreoffice(tmp_path, emit, emit_log):
+    from extractors.docling_extractor import DoclingExtractor
+
+    # Make a real .rtf from the .docx fixture with LibreOffice, then extract it end to end.
+    subprocess.run(
+        [
+            shutil.which("soffice"),
+            "--headless",
+            "--convert-to",
+            "rtf",
+            "--outdir",
+            str(tmp_path),
+            str(FIXTURES / "teknisk-beskrivning.docx"),
+        ],
+        capture_output=True,
+        timeout=180,
+        check=True,
+    )
+    result = DoclingExtractor().extract(tmp_path / "teknisk-beskrivning.rtf", FileKind.RTF, ExtractOptions(ocr=False), emit)
+    assert "120 m²" in result.pages[0].text
+    assert any(stage == "convert" for stage, _, _ in emit_log)
