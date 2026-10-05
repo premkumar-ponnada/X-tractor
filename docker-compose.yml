@@ -1,0 +1,59 @@
+# Full X-tractor stack: docker compose up --build   →  http://localhost:8080
+# Set XT_AUTH_PASSWORD and XT_JWT_SECRET in a .env file next to this file first.
+name: xtractor
+
+x-backend-env: &backend-env
+  XT_APP_ENV: ${XT_APP_ENV:-local}
+  XT_MONGODB_URI: mongodb://mongo:27017
+  XT_MONGODB_DATABASE: xtractor
+  XT_AUTH_EMAIL: ${XT_AUTH_EMAIL:-admin@xtractor.dev}
+  XT_AUTH_PASSWORD: ${XT_AUTH_PASSWORD:?set XT_AUTH_PASSWORD in .env}
+  XT_JWT_SECRET: ${XT_JWT_SECRET:?set XT_JWT_SECRET in .env}
+  XT_COOKIE_SECURE: ${XT_COOKIE_SECURE:-false}
+  XT_CORS_ORIGINS: http://localhost:8080
+  XT_TIKA_URL: http://tika:9998
+  XT_OCR_LANGUAGES: swe+eng
+
+services:
+  mongo:
+    image: mongo:8
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      retries: 5
+
+  tika:
+    image: apache/tika:3.3.2.0-full # "full" includes Tesseract for OCR
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    environment: *backend-env
+    volumes: [storage:/data/storage]
+    depends_on:
+      mongo: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["python", "run_worker.py"]
+    environment:
+      <<: *backend-env
+      XT_WORKER_PROCESSES: ${XT_WORKER_PROCESSES:-1}
+    volumes: [storage:/data/storage, models:/models]
+    depends_on:
+      mongo: { condition: service_healthy }
+      tika: { condition: service_started }
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports: ["8080:8080"]
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  storage:
+  models:
